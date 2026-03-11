@@ -2,29 +2,26 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
-// ====== COMMUNICATION CONSTANTS ======
+// Communication
 #define MESSAGE_PAYLOAD_SIZE 100
 #define SERIAL_BAUD_RATE 115200
 
-// ====== MAC ADDRESS DEFINITIONS ======
+//MAC Addresses for ESP-NOW 
 uint8_t ROCKET_MAC_ADDRESS[6] = {0x34, 0xcd, 0xb0, 0x06, 0x79, 0x60};
 uint8_t BASE_STATION_MAC_ADDRESS[6] = {0xDC, 0xDA, 0x0C, 0x64, 0x16, 0x60};
 
-// ====== DATA STRUCTURES ======
+//Data Structures
 typedef struct {
     char payload[MESSAGE_PAYLOAD_SIZE];
 } message_t;
 
-// ====== GLOBAL VARIABLES ======
+//Variables
 volatile bool g_messageReceived = false;
 message_t g_incomingMessage;
 message_t g_outgoingMessage;
 
-// ====== UTILITY FUNCTIONS ======
 
-/**
- * Print timestamp in format [HH:MM:SS.mmm]
- */
+
 void printTimestamp() {
     unsigned long ms = millis();
     int hours = (ms / 3600000) % 24;
@@ -35,10 +32,6 @@ void printTimestamp() {
     Serial.printf("[%02d:%02d:%02d.%03d] ", hours, minutes, seconds, milliseconds);
 }
 
-/**
- * Print timestamped message
- * @param message The message to print with timestamp
- */
 void printTimestampedMessage(const char* message) {
     printTimestamp();
     Serial.println(message);
@@ -68,12 +61,7 @@ void onDataReceived(const uint8_t *mac, const uint8_t *data, int len) {
     g_messageReceived = true;
 }
 
-// ====== INITIALIZATION FUNCTIONS ======
-
-/**
- * Initialize ESP-NOW communication
- * @return true if successful, false otherwise
- */
+// Initialize ESP-NOW
 bool initializeESPNow() {
     printTimestampedMessage("Initializing ESP-NOW...");
     
@@ -105,12 +93,6 @@ bool initializeESPNow() {
     return true;
 }
 
-// ====== COMMUNICATION FUNCTIONS ======
-
-/**
- * Send command to rocket
- * @param command Command string to send
- */
 void sendCommandToRocket(const String& command) {
     // Copy command to outgoing message structure
     command.toCharArray(g_outgoingMessage.payload, sizeof(g_outgoingMessage.payload));
@@ -124,9 +106,6 @@ void sendCommandToRocket(const String& command) {
     Serial.println(result == ESP_OK ? " [SUCCESS]" : " [FAILED]");
 }
 
-/**
- * Process received message from rocket
- */
 void processReceivedMessage() {
     printTimestamp();
     Serial.print("Received from rocket: ");
@@ -136,9 +115,7 @@ void processReceivedMessage() {
     g_messageReceived = false;
 }
 
-/**
- * Handle user input from serial console
- */
+
 void handleSerialInput() {
     if (Serial.available()) {
         String input = Serial.readStringUntil('\n');
@@ -150,10 +127,9 @@ void handleSerialInput() {
     }
 }
 
-// ====== MAIN PROGRAM ======
 
 void setup() {
-    // Initialize serial communication
+    // Initialize serial 
     Serial.begin(SERIAL_BAUD_RATE);
     while (!Serial) {
         delay(10); // Wait for serial port to connect
@@ -161,11 +137,11 @@ void setup() {
     
     printTimestampedMessage("=== ROCKET BASE STATION INITIALIZED ===");
     
-    // Initialize ESP-NOW communication
+    // Initialize ESP-NOW 
     if (!initializeESPNow()) {
         printTimestampedMessage("FATAL ERROR: ESP-NOW initialization failed!");
         while (1) {
-            delay(1000); // Halt execution
+            delay(1000);
         }
     }
     
@@ -180,15 +156,9 @@ void setup() {
 }
 
 void loop() {
-    // Handle incoming serial commands
     handleSerialInput();
     
-    // Process any received messages from rocket
     if (g_messageReceived) {
         processReceivedMessage();
     }
-    
-    // Small delay to prevent overwhelming the system
-    delay(10);
-
 }
